@@ -1,14 +1,46 @@
+import { createContext, useContext, useEffect, useState } from "react";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider } from "firebase/auth"; // Import GoogleAuthProvider once
 
-import { initializeApp } from "firebase/app";
+import { auth } from "../firebase";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCQOraof0vg4eM0qcdZ8SkLQV424muMOgc",
-  authDomain: "phone-auth-bbd98.firebaseapp.com",
-  projectId: "phone-auth-bbd98",
-  storageBucket: "phone-auth-bbd98.appspot.com",
-  messagingSenderId: "141054140585",
-  appId: "1:141054140585:web:ed6d64dbefcfdcd370c9b8"
-};
+const UserAuthContext = createContext();
 
+export function UserAuthContextProvider({ children }) {
+    const [user, setUser] = useState(null);
 
-const app = initializeApp(firebaseConfig);
+    function signUp(email, password) {
+        return createUserWithEmailAndPassword(auth, email, password);
+    }
+
+    function login(email, password) {
+        return signInWithEmailAndPassword(auth, email, password);
+    }
+
+    function logOut() {
+        return signOut(auth);
+    }
+
+    function googleSignIn() {
+        const googleAuthProvider = new GoogleAuthProvider(); // Create a new instance of GoogleAuthProvider
+        return signInWithPopup(auth, googleAuthProvider);
+    }
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+        });
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
+    return (
+        <UserAuthContext.Provider value={{ user, signUp, login, logOut,googleSignIn }}>
+            {children}
+        </UserAuthContext.Provider>
+    );
+}
+
+export function useUserAuth() {
+    return useContext(UserAuthContext);
+}
